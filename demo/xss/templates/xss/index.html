@@ -1,0 +1,42 @@
+<html>
+	<head>
+		<title>XSS Index</title>
+	</head>
+
+	<body>
+		<h1>XSS Index</h1>
+		
+		{% if user %}
+			<ul>
+			{% for u in users %}
+				<li> <a> {{ u }}	</a> </li>
+			{% endfor %}
+			</ul>
+		{% else %}
+			<p> No users found. </p>
+		{% endif %}
+
+		<br><br>
+
+		<form action="" method="post">
+			{% csrf_token %}
+			{{ form }}
+			<input type="submit" value="Create">
+		</form>
+
+		<br>
+
+		<form action="/xss/reset" method="post">
+			{% csrf_token %}
+			<label for="html">Delete All Users</label>
+			<input type="submit" name="delete" value="Reset DB">
+		</form>
+
+		<br><br>
+
+		<h3>Content of &#123;&#37; debug &#37;&#125;</h3>
+
+		{% debug %}
+
+	</body>		
+</html>

@@ -1,0 +1,222 @@
+<html>
+	<head>
+		<title>SQL Index</title>
+
+		<style>
+			table, td, th {
+				border: 1px solid black;
+			}
+
+			table {
+				border-collapse: collapse;
+				width: 100%;
+			}
+			td {
+				text-align: center;
+			}
+			td.leftered {
+				text-align: left;
+				padding-left: 30px;
+			}
+
+			div.centered {
+				text-align: center;
+			}
+			div.leftered {
+				text-align: left;
+			}
+			div.scrollable {
+  				margin: auto;
+				width: 80%;
+				height: 200px;
+				overflow: scroll;
+			}
+			div.scrollable2 {
+  				margin: auto;
+				width: 80%;
+				height: 150px;
+				overflow: scroll;
+			}
+		</style>
+
+	</head>
+
+	<body>
+		<h1>SQL Index</h1>
+
+
+		<table>
+			<tr>
+		        <td>
+		        	<h3>User table:</h3>
+		        	<div class="scrollable">
+						<table id="table">
+							<thead>
+							    <tr>
+							        <th>Name</th>
+							        <th>Exams</th>
+							        <th>Age</th>
+							    </tr>
+							</thead>
+							<tbody>
+								{% for u in users %}
+								    <tr>
+								        <td>{{ u.name }}</td>
+								        <td>{{ u.exams.all }}</td>
+								        <td>{{ u.age }}</td>
+								    </tr>
+								{% endfor %}
+					    	</tbody>
+						</table>
+					</div>
+		        </td>
+		        <td>
+		        	<h3>Exam table:</h3>
+		        	<div class="scrollable">
+						<table id="table">
+							<thead>
+							    <tr>
+							        <th>Name</th>
+							    </tr>
+							</thead>
+							<tbody>
+								{% for e in exams %}
+								    <tr>
+								        <td>{{ e.name }}</td>
+								    </tr>
+								{% endfor %}
+					    	</tbody>
+						</table>
+					</div>
+		        </td>
+			</tr>
+		</table>
+		<div class="centered">
+
+			<h3> DB Management: </h3>
+			<form action="/sql/init" method="post">
+				{% csrf_token %}
+				<input type="submit" value="Init Database">
+			</form>
+			<form action="/sql/reset" method="post">
+				{% csrf_token %}
+				<input type="submit" value="Empty Database">
+			</form>
+			<br>
+			<h3> Add some exams here: </h3>
+			<form action="" method="post">
+				{% csrf_token %}
+				{{ exam_form }}
+				<input type="submit" value="New Exam">
+			</form>
+		</div>
+
+		
+
+		<br><br>
+
+		<div class="centered">
+			<h4>Query type: </h4>
+
+			<div>
+				<table>
+						<tr>
+							<td></td>
+							<td>Aggregate Query:</td>
+							<td>Annotate Query:</td>
+							<td>Extra Query:</td>
+						</tr>
+						<tr>
+							<td>Django Syntax:</td>
+						    <td class="leftered">
+						    	data = {<br>
+									&emsp;column_alias : Max('age'),<br>
+								}<br>
+								query_response = User.objects.all().aggregate(**data)
+						    </td>
+						    <td class="leftered">
+						    	data = {<br>
+									&emsp;column_alias : Count('user'),<br>
+								}<br>
+								query_response = Exam.objects.annotate(**data)
+						    </td>
+						    <td class="leftered">
+						    	data = {<br>
+									&emsp;"select": {column_alias: "name"},<br>
+									&emsp;"tables": {"sql_user"},<br>
+									&emsp;"where": ["age > 45"]<br>
+								}<br>
+								query_response = User.objects.extra(**data)
+						    </td>
+						</tr>
+						<tr>
+							<td>SQL Syntax:</td>
+						    <td class="leftered">
+						    	SELECT MAX("sql_user"."age") as column_alias <br>
+						    	FROM "sql_user"
+						    </td>
+						    <td class="leftered">
+						    	SELECT "sql_exam"."id", "sql_exam"."name", COUNT("sql_user_exams"."user_id") AS column_alias <br>
+						    	FROM "sql_exam" <br>
+						    	LEFT OUTER JOIN "sql_user_exams" ON ("sql_exam"."id" = "sql_user_exams"."exam_id") <br>GROUP BY "sql_exam"."id";
+						    </td>
+						    <td class="leftered">
+						  		SELECT (name) AS column_alias, "sql_user"."id", "sql_user"."name", "sql_user"."age" <br>
+						  		FROM "sql_user" <br>
+						  		WHERE (age > 45)
+						    </td>
+						</tr>
+						<tr>
+							<td>Legitimate Column Alias:</td>
+						    <td class="leftered">
+						    	maximum_age
+						    </td>
+						    <td class="leftered">
+						    	student_count
+						    </td>
+						    <td class="leftered">
+						    	old_student
+						    </td>
+						</tr>
+						<tr>
+							<td>SQLi Column Alias::</td>
+						    <td class="leftered">
+						    	max" FROM "sql_user"; <br>
+						    	INSERT INTO sql_exam (name) VALUES ('SQLi'); --
+						    </td>
+						    <td class="leftered">
+						    	stud_count" FROM "sql_exam", "sql_user_exams" GROUP BY "sql_exam"."id"; <br>
+						    	DELETE FROM "sql_exam" WHERE "name" = 'SQLi'; --
+						    </td>
+						    <td class="leftered">
+						    	old_student" FROM "sql_user"; <br> 
+						    	UPDATE "sql_exam" SET name = 'AnotherSQLi' WHERE name = 'EXAM'; -- 
+						    </td>
+						</tr>
+				</table>
+			</div>
+			<br>
+			<form action="" method="post">
+				{% csrf_token %}
+				{{ query_form }}
+				<input type="submit" value="Perform">
+			</form>
+			<br>
+		</div>
+		<div class="scrollable2">
+			<table id="table">
+				<thead>
+				    <tr>
+				        <th>Result</th>
+				    </tr>
+				</thead>
+				<tbody>
+				    <tr>
+				        <td>{{ query_response }}</td>
+				    </tr>
+		    	</tbody>
+			</table>
+		</div>
+
+	</body>		
+</html>
